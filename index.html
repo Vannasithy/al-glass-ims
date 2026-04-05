@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AL & Glass Installation Management</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#222;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+/* Layout */
+#app{display:flex;flex-direction:column;min-height:100vh}
+#navbar{background:#1a3a5c;color:#fff;display:flex;align-items:center;padding:0 24px;height:56px;gap:8px;flex-wrap:wrap}
+#navbar .brand{font-weight:700;font-size:1.1rem;margin-right:16px;white-space:nowrap}
+#navbar .nav-links{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+#navbar .nav-links button{background:transparent;border:none;color:#cde;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:.85rem;transition:background .2s}
+#navbar .nav-links button:hover,#navbar .nav-links button.active{background:#2d5f8a;color:#fff}
+#navbar .user-info{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:.85rem}
+#navbar .user-info span{opacity:.8}
+#navbar .user-info button{background:#c0392b;border:none;color:#fff;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:.82rem}
+#page{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%}
+
+/* Cards & Tables */
+.card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:20px;margin-bottom:20px}
+.card h2{font-size:1.1rem;margin-bottom:16px;color:#1a3a5c;border-bottom:2px solid #e8edf2;padding-bottom:8px}
+.card h3{font-size:.95rem;margin:12px 0 8px;color:#2d5f8a}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:#e8edf2;padding:8px 10px;text-align:left;font-weight:600;color:#1a3a5c;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+tr:hover td{background:#f7f9fb}
+.tfoot td{background:#e8edf2;font-weight:600}
+
+/* Forms */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.8rem;font-weight:600;color:#555}
+.form-group input,.form-group select,.form-group textarea{padding:7px 10px;border:1px solid #ccd;border-radius:4px;font-size:.85rem;width:100%}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#2d5f8a;box-shadow:0 0 0 2px rgba(45,95,138,.15)}
+.form-group .err{color:#c0392b;font-size:.75rem}
+
+/* Buttons */
+.btn{padding:7px 16px;border:none;border-radius:4px;cursor:pointer;font-size:.85rem;font-weight:600;transition:background .2s}
+.btn-primary{background:#1a3a5c;color:#fff}.btn-primary:hover{background:#2d5f8a}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-danger{background:#c0392b;color:#fff}.btn-danger:hover{background:#a93226}
+.btn-warning{background:#e67e22;color:#fff}.btn-warning:hover{background:#ca6f1e}
+.btn-sm{padding:4px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* Status badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600}
+.badge-pending{background:#fef9e7;color:#b7950b}
+.badge-producing{background:#eaf4fb;color:#1a5276}
+.badge-completed{background:#eafaf1;color:#1e8449}
+.badge-delivered{background:#e8f8f5;color:#148f77}
+.badge-requested{background:#fef9e7;color:#b7950b}
+.badge-onsite{background:#eaf4fb;color:#1a5276}
+.badge-installed{background:#eafaf1;color:#1e8449}
+.badge-remaining{background:#fdedec;color:#922b21}
+.badge-accepted{background:#eafaf1;color:#1e8449}
+.badge-denied{background:#fdedec;color:#922b21}
+.badge-instock{background:#e8f8f5;color:#148f77}
+
+/* Login */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a3a5c,#2d5f8a)}
+.login-box{background:#fff;border-radius:12px;padding:40px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.login-box h1{text-align:center;color:#1a3a5c;margin-bottom:8px;font-size:1.3rem}
+.login-box p{text-align:center;color:#888;font-size:.82rem;margin-bottom:24px}
+.login-box .form-group{margin-bottom:14px}
+.login-box .btn{width:100%;padding:10px;font-size:.95rem;margin-top:8px}
+.login-err{background:#fdedec;color:#922b21;padding:8px 12px;border-radius:4px;font-size:.82rem;margin-bottom:12px;display:none}
+
+/* Summary grid */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.summary-item{background:#f7f9fb;border-radius:6px;padding:12px;border-left:3px solid #2d5f8a}
+.summary-item .label{font-size:.75rem;color:#666;margin-bottom:4px}
+.summary-item .value{font-size:1rem;font-weight:700;color:#1a3a5c}
+.summary-item .value.green{color:#27ae60}
+.summary-item .value.red{color:#c0392b}
+
+/* Progress bar */
+.progress-bar-wrap{background:#e8edf2;border-radius:10px;height:12px;overflow:hidden;margin-top:4px}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#27ae60,#2ecc71);border-radius:10px;transition:width .4s}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:12px 20px;border-radius:6px;font-size:.85rem;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:8px;padding:24px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.modal h3{margin-bottom:16px;color:#1a3a5c}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* Misc */
+.section-title{font-size:1rem;font-weight:700;color:#1a3a5c;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #e8edf2}
+.empty{color:#aaa;font-style:italic;padding:16px;text-align:center}
+.inline-err{color:#c0392b;font-size:.78rem;margin-top:2px}
+select.status-select{padding:4px 8px;border-radius:4px;border:1px solid #ccd;font-size:.8rem}
+.tag{display:inline-block;background:#e8edf2;color:#1a3a5c;padding:2px 8px;border-radius:4px;font-size:.75rem;margin:1px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="navbar" style="display:none">
+    <span class="brand">🏗 AL&Glass IMS</span>
+    <div class="nav-links" id="nav-links"></div>
+    <div class="user-info">
+      <span id="nav-user"></span>
+      <button onclick="Auth.logout()">Logout</button>
+    </div>
+  </div>
+  <div id="page"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+function uuid(){return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16)})}
+function fmt2(n){return(+n||0).toFixed(2)}
+function fmtUSD(n){return'$'+fmt2(n)}
+function today(){return new Date().toISOString().slice(0,10)}
+
+async function sha256(msg){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function showToast(msg,ms=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',ms);
+}
+
+function openModal(html,onSubmit){
+  const ov=document.createElement('div');
+  ov.className='modal-overlay';
+  ov.innerHTML=`<div class="modal">${html}</div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('.modal').addEventListener('click',e=>e.stopPropagation());
+  ov.addEventListener('click',()=>ov.remove());
+  if(onSubmit){
+    const f=ov.querySelector('form');
+    if(f)f.addEventListener('submit',async e=>{e.preventDefault();const ok=await onSubmit(f,ov);if(ok)ov.remove();});
+  }
+  return ov;
+}
+
+// ─── STORE ───────────────────────────────────────────────────────────────────
+const Store={
+  get(key){try{return JSON.parse(localStorage.getItem(key)||'[]')||[];}catch(e){console.warn('Store corrupt:',key);localStorage.setItem(key,'[]');return[];}},
+  set(key,data){try{localStorage.setItem(key,JSON.stringify(data));}catch(e){if(e.name==='QuotaExceededError')showToast('Storage full — cannot save');}},
+  insert(key,item){const d=this.get(key);d.push(item);this.set(key,d);return item;},
+  update(key,id,patch){const d=this.get(key);const i=d.findIndex(x=>x.id===id);if(i<0)return null;d[i]={...d[i],...patch};this.set(key,d);return d[i];},
+  remove(key,id){const d=this.get(key).filter(x=>x.id!==id);this.set(key,d);return true;},
+  findById(key,id){return this.get(key).find(x=>x.id===id)||null;},
+  findWhere(key,fn){return this.get(key).filter(fn);}
+};
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+const Auth={
+  async authenticate(username,password){
+    const hash=await sha256(password);
+    const users=Store.get('users');
+    const user=users.find(u=>u.username===username&&u.passwordHash===hash);
+    if(!user)return{success:false,error:'Invalid username or password'};
+    sessionStorage.setItem('session',JSON.stringify({id:user.id,username:user.username,role:user.role,displayName:user.displayName}));
+    return{success:true,user};
+  },
+  getCurrentUser(){try{return JSON.parse(sessionStorage.getItem('session'));}catch{return null;}},
+  logout(){sessionStorage.removeItem('session');location.hash='#login';Router.render();},
+  hasPermission(role,page){
+    const P={
+      project_manager:new Set(['projects','contract-boq','progress-claim','bom','production-request','production','progress','purchasing-request','procurement','users']),
+      qs_officer:new Set(['projects','contract-boq','progress-claim']),
+      bom_officer:new Set(['projects','bom']),
+      stock_production:new Set(['projects','production']),
+      site_engineer:new Set(['projects','production-request','progress']),
+      procurement_officer:new Set(['projects','purchasing-request','procurement'])
+    };
+    return(P[role]||new Set()).has(page);
+  }
+};
+
+// ─── ROUTER ──────────────────────────────────────────────────────────────────
+const Router={
+  _pages:{},
+  register(key,fn){this._pages[key]=fn;},
+  navigate(page,params={}){
+    const qs=new URLSearchParams(params).toString();
+    location.hash='#'+page+(qs?'?'+qs:'');
+  },
+  getCurrentPage(){return(location.hash.split('?')[0]||'#login').slice(1)||'login';},
+  getParams(){
+    const h=location.hash;const q=h.includes('?')?h.split('?')[1]:'';
+    return Object.fromEntries(new URLSearchParams(q));
+  },
+  async render(){
+    const page=this.getCurrentPage();
+    const user=Auth.getCurrentUser();
+    const container=document.getElementById('page');
+    const navbar=document.getElementById('navbar');
+
+    if(page==='login'||!user){
+      navbar.style.display='none';
+      container.innerHTML='';
+      Pages.login(container);
+      return;
+    }
+
+    if(!Auth.hasPermission(user.role,page)){
+      navbar.style.display='flex';
+      renderNav(user);
+      container.innerHTML=`<div class="card"><p style="color:#c0392b;font-size:1.1rem">403 — Access Denied</p><p style="margin-top:8px;color:#666">You do not have permission to view this page.</p></div>`;
+      return;
+    }
+
+    navbar.style.display='flex';
+    renderNav(user);
+    document.getElementById('nav-user').textContent=user.displayName+' ('+roleLabel(user.role)+')';
+    container.innerHTML='';
+    const fn=this._pages[page];
+    if(fn)await fn(container,this.getParams());
+    else container.innerHTML='<div class="card"><p>Page not found.</p></div>';
+  }
+};
+
+window.addEventListener('hashchange',()=>Router.render());
+
+function roleLabel(r){return{project_manager:'Project Manager',qs_officer:'QS Officer',bom_officer:'BOM Officer',stock_production:'Stock & Production',site_engineer:'Site Engineer',procurement_officer:'Procurement Officer'}[r]||r;}
+
+const NAV_ITEMS=[
+  {key:'projects',label:'Projects'},
+  {key:'contract-boq',label:'Contract BOQ'},
+  {key:'progress-claim',label:'Progress Claim'},
+  {key:'bom',label:'BOM / BOQ'},
+  {key:'production-request',label:'Production Request'},
+  {key:'production',label:'Production'},
+  {key:'progress',label:'Progress'},
+  {key:'purchasing-request',label:'Purchasing Request'},
+  {key:'procurement',label:'Procurement'},
+  {key:'users',label:'Users'},
+];
+
+function renderNav(user){
+  const cur=Router.getCurrentPage();
+  document.getElementById('nav-links').innerHTML=NAV_ITEMS
+    .filter(n=>Auth.hasPermission(user.role,n.key))
+    .map(n=>`<button class="${cur===n.key?'active':''}" onclick="Router.navigate('${n.key}')">${n.label}</button>`)
+    .join('');
+}
+
+// ─── CALCULATIONS ─────────────────────────────────────────────────────────────
+function calcItemTotal(item){
+  const area=item.width*item.height*item.quantity;
+  if(item.uom==='Sqm')return item.unitPrice*area;
+  if(item.uom==='m')return item.unitPrice*item.width;
+  if(item.uom==='Set')return item.unitPrice*item.quantity;
+  return 0;
+}
+
+function calcItemArea(item){return item.width*item.height*item.quantity;}
+
+function computeProjectSummary(projectId){
+  const items=Store.findWhere('contractItems',x=>x.projectId===projectId);
+  const contractAmount=items.reduce((s,i)=>s+calcItemTotal(i),0);
+  const bom=Store.findWhere('bomItems',x=>x.projectId===projectId);
+  const laborAmount=bom.filter(x=>x.category==='labor').reduce((s,i)=>s+i.totalCost,0);
+  const materialAmount=bom.filter(x=>x.category==='raw_materials').reduce((s,i)=>s+i.totalCost,0);
+  const claims=Store.findWhere('progressClaims',x=>x.projectId===projectId);
+  const amountReceived=claims.reduce((s,c)=>s+c.amountToRequest,0);
+  const balanceAmount=contractAmount-amountReceived;
+  const prs=Store.findWhere('purchaseRequests',x=>x.projectId===projectId);
+  let materialBought=0;
+  prs.forEach(pr=>pr.items.forEach(it=>{if(it.status==='Delivered to Stock'){const b=bom.find(b=>b.id===it.bomItemId);if(b)materialBought+=b.unitCost*it.quantityRequested;}}));
+  const materialRemaining=materialAmount-materialBought;
+  const sp=Store.findWhere('siteProgress',x=>x.projectId===projectId);
+  const totalInstalled=sp.reduce((s,x)=>s+x.qtyInstalled,0);
+  const totalContractQty=items.reduce((s,i)=>s+i.quantity,0);
+  const projectProgress=totalContractQty>0?Math.min(100,(totalInstalled/totalContractQty)*100):0;
+  return{contractAmount,laborAmount,materialAmount,amountReceived,balanceAmount,materialBought,materialRemaining,projectProgress};
+}
+
+// ─── SEED ─────────────────────────────────────────────────────────────────────
+async function seedAdmin(){
+  if(Store.get('users').length===0){
+    const hash=await sha256('admin123');
+    Store.insert('users',{id:uuid(),username:'admin',passwordHash:hash,displayName:'Admin Manager',role:'project_manager',createdBy:'system',createdAt:new Date().toISOString()});
+  }
+}
+
+// ─── PAGE: LOGIN ──────────────────────────────────────────────────────────────
+const Pages={};
+
+Pages.login=function(c){
+  document.getElementById('app').style.background='none';
+  c.style.padding='0';
+  c.innerHTML=`
+  <div id="login-page">
+    <div class="login-box">
+      <h1>🏗 AL & Glass IMS</h1>
+      <p>Aluminum & Glass Installation Management</p>
+      <div class="login-err" id="login-err"></div>
+      <form id="login-form">
+        <div class="form-group"><label>Username</label><input name="username" required autocomplete="username"/></div>
+        <div class="form-group"><label>Password</label><input type="password" name="password" required autocomplete="current-password"/></div>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+      <p style="margin-top:16px;text-align:center;font-size:.75rem;color:#aaa">Default: admin / admin123</p>
+    </div>
+  </div>`;
+  c.querySelector('#login-form').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const f=e.target;
+    const res=await Auth.authenticate(f.username.value.trim(),f.password.value);
+    if(res.success){Router.navigate('projects');}
+    else{const el=document.getElementById('login-err');el.textContent=res.error;el.style.display='block';}
+  });
+};
+</script>
+
+<script>
+// ─── PAGE: PROJECTS ───────────────────────────────────────────────────────────
+Pages.projects=function(c){
+  const user=Auth.getCurrentUser();
+  const isManager=user.role==='project_manager';
+
+  function render(){
+    const projects=Store.get('projects');
+    c.innerHTML=`
+    <div class="card">
+      <h2>Project Master List</h2>
+      ${isManager?`<div class="btn-row"><button class="btn btn-primary" id="add-proj-btn">+ Add Project</button></div>`:''}
+      ${projects.length===0?`<p class="empty">No projects yet.</p>`:`
+      <table style="margin-top:12px">
+        <thead><tr>
+          <th>Project Name</th><th>Owner</th><th>Location</th>
+          <th>Retention</th><th>Ret%</th><th>Contract Amt</th>
+          <th>Received</th><th>Balance</th><th>Progress</th>
+          ${isManager?'<th>Actions</th>':''}
+        </tr></thead>
+        <tbody>
+        ${projects.map(p=>{
+          const s=computeProjectSummary(p.id);
+          return`<tr>
+            <td><a href="#" onclick="Router.navigate('contract-boq',{projectId:'${p.id}'})" style="color:#1a3a5c;font-weight:600">${p.name}</a></td>
+            <td>${p.owner}</td><td>${p.location}</td>
+            <td>${p.retentionType==='progress'?'Progress':'Final'} (${p.retentionMonths}mo)</td>
+            <td>${p.retentionPercent}%</td>
+            <td>${fmtUSD(s.contractAmount)}</td>
+            <td class="green">${fmtUSD(s.amountReceived)}</td>
+            <td>${fmtUSD(s.balanceAmount)}</td>
+            <td>
+              <div style="min-width:80px">
+                <div style="font-size:.8rem;margin-bottom:2px">${fmt2(s.projectProgress)}%</div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${s.projectProgress}%"></div></div>
+              </div>
+            </td>
+            ${isManager?`<td>
+              <button class="btn btn-warning btn-sm" onclick="editProject('${p.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteProject('${p.id}')">Del</button>
+            </td>`:''}
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`}
+    </div>
+    ${projects.length>0?renderSummaryDetail(projects[0].id):''}`;
+    if(isManager)document.getElementById('add-proj-btn')?.addEventListener('click',()=>projectModal(null));
+  }
+
+  function renderSummaryDetail(pid){
+    const p=Store.findById('projects',pid);if(!p)return'';
+    const s=computeProjectSummary(pid);
+    return`<div class="card"><h2>Summary — ${p.name}</h2>
+    <div class="summary-grid">
+      <div class="summary-item"><div class="label">Contract Amount</div><div class="value">${fmtUSD(s.contractAmount)}</div></div>
+      <div class="summary-item"><div class="label">Labor Amount</div><div class="value">${fmtUSD(s.laborAmount)}</div></div>
+      <div class="summary-item"><div class="label">Material Amount</div><div class="value">${fmtUSD(s.materialAmount)}</div></div>
+      <div class="summary-item"><div class="label">Amount Received</div><div class="value green">${fmtUSD(s.amountReceived)}</div></div>
+      <div class="summary-item"><div class="label">Balance Amount</div><div class="value red">${fmtUSD(s.balanceAmount)}</div></div>
+      <div class="summary-item"><div class="label">Material Bought</div><div class="value">${fmtUSD(s.materialBought)}</div></div>
+      <div class="summary-item"><div class="label">Material Remaining</div><div class="value">${fmtUSD(s.materialRemaining)}</div></div>
+      <div class="summary-item"><div class="label">Project Progress</div><div class="value">${fmt2(s.projectProgress)}%
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${s.projectProgress}%"></div></div>
+      </div></div>
+    </div></div>`;
+  }
+
+  function projectModal(id){
+    const p=id?Store.findById('projects',id):{};
+    const html=`<h3>${id?'Edit':'Add'} Project</h3>
+    <form id="proj-form">
+      <div class="form-grid">
+        <div class="form-group"><label>Project Name*</label><input name="name" value="${p.name||''}" required/></div>
+        <div class="form-group"><label>Owner*</label><input name="owner" value="${p.owner||''}" required/></div>
+        <div class="form-group"><label>Location*</label><input name="location" value="${p.location||''}" required/></div>
+        <div class="form-group"><label>Retention Type*</label>
+          <select name="retentionType">
+            <option value="progress" ${(p.retentionType||'progress')==='progress'?'selected':''}>Progress Retention</option>
+            <option value="final" ${p.retentionType==='final'?'selected':''}>Final Retention</option>
+          </select></div>
+        <div class="form-group"><label>Retention Time (months)*</label><input type="number" name="retentionMonths" value="${p.retentionMonths||12}" min="0" required/></div>
+        <div class="form-group"><label>Retention Percent (%)*</label><input type="number" name="retentionPercent" value="${p.retentionPercent||5}" min="0" max="100" step="0.01" required/></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${id?'Save':'Add'}</button>
+      </div>
+    </form>`;
+    openModal(html,async(f)=>{
+      const data={name:f.name.value.trim(),owner:f.owner.value.trim(),location:f.location.value.trim(),
+        retentionType:f.retentionType.value,retentionMonths:+f.retentionMonths.value,retentionPercent:+f.retentionPercent.value};
+      if(id)Store.update('projects',id,data);
+      else Store.insert('projects',{id:uuid(),...data,createdAt:new Date().toISOString()});
+      render();return true;
+    });
+  }
+
+  window.editProject=id=>projectModal(id);
+  window.deleteProject=id=>{if(confirm('Delete this project?')){Store.remove('projects',id);render();}};
+  render();
+};
+
+// ─── PAGE: USERS ──────────────────────────────────────────────────────────────
+Pages.users=function(c){
+  const ROLES=[
+    {v:'project_manager',l:'Project Manager'},
+    {v:'qs_officer',l:'QS Officer'},
+    {v:'bom_officer',l:'BOM Officer'},
+    {v:'stock_production',l:'Stock & Production'},
+    {v:'site_engineer',l:'Site Engineer'},
+    {v:'procurement_officer',l:'Procurement Officer'},
+  ];
+
+  function render(){
+    const users=Store.get('users');
+    c.innerHTML=`<div class="card"><h2>User Management</h2>
+    <div class="btn-row"><button class="btn btn-primary" id="add-user-btn">+ Add User</button></div>
+    <table style="margin-top:12px">
+      <thead><tr><th>Username</th><th>Display Name</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>${users.map(u=>`<tr>
+        <td>${u.username}</td><td>${u.displayName}</td>
+        <td>${roleLabel(u.role)}</td>
+        <td>${u.createdAt?u.createdAt.slice(0,10):''}</td>
+        <td>
+          <button class="btn btn-warning btn-sm" onclick="editUser('${u.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">Del</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+    document.getElementById('add-user-btn').addEventListener('click',()=>userModal(null));
+  }
+
+  function userModal(id){
+    const u=id?Store.findById('users',id):{};
+    const html=`<h3>${id?'Edit':'Add'} User</h3>
+    <form id="user-form">
+      <div class="form-grid">
+        <div class="form-group"><label>Username*</label><input name="username" value="${u.username||''}" required/></div>
+        <div class="form-group"><label>Display Name*</label><input name="displayName" value="${u.displayName||''}" required/></div>
+        <div class="form-group"><label>Password${id?' (leave blank to keep)':' *'}</label><input type="password" name="password" ${id?'':'required'}/></div>
+        <div class="form-group"><label>Role*</label>
+          <select name="role">${ROLES.map(r=>`<option value="${r.v}" ${u.role===r.v?'selected':''}>${r.l}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div id="user-err" class="inline-err"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${id?'Save':'Add'}</button>
+      </div>
+    </form>`;
+    openModal(html,async(f,ov)=>{
+      const username=f.username.value.trim();
+      const existing=Store.findWhere('users',u=>u.username===username&&u.id!==id);
+      if(existing.length>0){ov.querySelector('#user-err').textContent='Username already exists.';return false;}
+      const data={username,displayName:f.displayName.value.trim(),role:f.role.value};
+      if(f.password.value){data.passwordHash=await sha256(f.password.value);}
+      if(id)Store.update('users',id,data);
+      else Store.insert('users',{id:uuid(),...data,passwordHash:await sha256(f.password.value),createdBy:Auth.getCurrentUser().id,createdAt:new Date().toISOString()});
+      render();return true;
+    });
+  }
+
+  window.editUser=id=>userModal(id);
+  window.deleteUser=id=>{
+    const me=Auth.getCurrentUser();
+    if(id===me.id){showToast('Cannot delete your own account.');return;}
+    if(confirm('Delete this user?')){Store.remove('users',id);render();}
+  };
+  render();
+};
+</script>
+
+<script>
+// ─── PAGE: CONTRACT BOQ ───────────────────────────────────────────────────────
+Pages['contract-boq']=function(c,params){
+  const user=Auth.getCurrentUser();
+  const canEdit=user.role==='project_manager'||user.role==='qs_officer';
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+
+  function render(){
+    const items=Store.findWhere('contractItems',x=>x.projectId===projectId);
+    const total=items.reduce((s,i)=>s+calcItemTotal(i),0);
+    c.innerHTML=`<div class="card"><h2>Contract BOQ</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px">
+        <label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+      ${canEdit?`<button class="btn btn-primary" style="margin-top:18px" id="add-item-btn">+ Add Item</button>`:''}
+    </div>
+    ${items.length===0?`<p class="empty">No contract items yet.</p>`:`
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Item Code</th><th>Description</th><th>Drawing</th>
+        <th>Frame Type</th><th>Panel Type</th><th>Hardware</th>
+        <th>W(m)</th><th>H(m)</th><th>Qty</th><th>Area(m²)</th>
+        <th>UoM</th><th>Unit Price</th><th>Total Amount</th>
+        ${canEdit?'<th>Actions</th>':''}
+      </tr></thead>
+      <tbody>${items.map(i=>`<tr>
+        <td><strong>${i.itemCode}</strong></td>
+        <td>${i.description}</td>
+        <td>${i.drawing?`<img src="${i.drawing}" style="height:36px;border-radius:3px;cursor:pointer" onclick="viewDrawing('${i.id}')" title="Click to view"/>`:'-'}</td>
+        <td>${i.frameType||'-'}</td><td>${i.panelType||'-'}</td><td>${i.hardwareType||'-'}</td>
+        <td>${i.width}</td><td>${i.height}</td><td>${i.quantity}</td>
+        <td>${fmt2(calcItemArea(i))}</td><td>${i.uom}</td>
+        <td>${fmtUSD(i.unitPrice)}/${i.uom}</td>
+        <td><strong>${fmtUSD(calcItemTotal(i))}</strong></td>
+        ${canEdit?`<td>
+          <button class="btn btn-warning btn-sm" onclick="editBOQItem('${i.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteBOQItem('${i.id}')">Del</button>
+        </td>`:''}
+      </tr>`).join('')}</tbody>
+      <tfoot><tr>
+        <td colspan="${canEdit?12:11}" style="text-align:right;font-weight:700">Total Contract Amount:</td>
+        <td><strong>${fmtUSD(total)}</strong></td>
+        ${canEdit?'<td></td>':''}
+      </tr></tfoot>
+    </table></div>`}
+    </div>`;
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;render();});
+    document.getElementById('add-item-btn')?.addEventListener('click',()=>boqModal(null));
+  }
+
+  function boqModal(id){
+    const it=id?Store.findById('contractItems',id):{};
+    const html=`<h3>${id?'Edit':'Add'} Contract Item</h3>
+    <form id="boq-form">
+      <div class="form-grid">
+        <div class="form-group"><label>Item Code*</label><input name="itemCode" value="${it.itemCode||''}" required/></div>
+        <div class="form-group"><label>Description*</label><input name="description" value="${it.description||''}" required/></div>
+        <div class="form-group"><label>Drawing (image)</label>
+          <input type="file" name="drawing" accept="image/*" style="padding:4px"/>
+          ${it.drawing?`<div style="margin-top:6px"><img src="${it.drawing}" style="max-height:80px;border-radius:4px"/><br/><small style="color:#888">Current drawing — upload new to replace</small></div>`:''}
+        </div>
+        <div class="form-group"><label>Frame Type</label><input name="frameType" value="${it.frameType||''}"/></div>
+        <div class="form-group"><label>Panel Type</label><input name="panelType" value="${it.panelType||''}"/></div>
+        <div class="form-group"><label>Hardware Type</label><input name="hardwareType" value="${it.hardwareType||''}"/></div>
+        <div class="form-group"><label>Width (m)*</label><input type="number" name="width" value="${it.width||''}" step="0.01" min="0" required/></div>
+        <div class="form-group"><label>Height (m)*</label><input type="number" name="height" value="${it.height||''}" step="0.01" min="0" required/></div>
+        <div class="form-group"><label>Quantity (set)*</label><input type="number" name="quantity" value="${it.quantity||''}" min="1" required/></div>
+        <div class="form-group"><label>UoM*</label>
+          <select name="uom">
+            <option value="Sqm" ${(it.uom||'Sqm')==='Sqm'?'selected':''}>Sqm</option>
+            <option value="Set" ${it.uom==='Set'?'selected':''}>Set</option>
+            <option value="m" ${it.uom==='m'?'selected':''}>m</option>
+          </select></div>
+        <div class="form-group"><label>Unit Price (USD)*</label><input type="number" name="unitPrice" value="${it.unitPrice||''}" step="0.01" min="0" required/></div>
+      </div>
+      <div id="boq-err" class="inline-err"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${id?'Save':'Add'}</button>
+      </div>
+    </form>`;
+    openModal(html,async(f,ov)=>{
+      const itemCode=f.itemCode.value.trim();
+      const dup=Store.findWhere('contractItems',x=>x.projectId===projectId&&x.itemCode===itemCode&&x.id!==id);
+      if(dup.length>0){ov.querySelector('#boq-err').textContent='Item code already exists in this project.';return false;}
+
+      // Handle drawing file upload
+      let drawingData=it.drawing||'';
+      const fileInput=f.drawing;
+      if(fileInput&&fileInput.files&&fileInput.files[0]){
+        drawingData=await new Promise(resolve=>{
+          const reader=new FileReader();
+          reader.onload=e=>resolve(e.target.result);
+          reader.readAsDataURL(fileInput.files[0]);
+        });
+      }
+
+      const data={projectId,itemCode,description:f.description.value.trim(),drawing:drawingData,
+        frameType:f.frameType.value.trim(),panelType:f.panelType.value.trim(),hardwareType:f.hardwareType.value.trim(),
+        width:+f.width.value,height:+f.height.value,quantity:+f.quantity.value,
+        uom:f.uom.value,unitPrice:+f.unitPrice.value};
+      if(id)Store.update('contractItems',id,data);
+      else Store.insert('contractItems',{id:uuid(),...data});
+      render();return true;
+    });
+  }
+
+  window.editBOQItem=id=>boqModal(id);
+  window.deleteBOQItem=id=>{if(confirm('Delete this item?')){Store.remove('contractItems',id);render();}};
+  window.viewDrawing=id=>{
+    const item=Store.findById('contractItems',id);if(!item||!item.drawing)return;
+    openModal(`<h3>${item.itemCode} — Drawing</h3>
+      <img src="${item.drawing}" style="max-width:100%;border-radius:6px;margin-top:8px"/>
+      <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`);
+  };
+  render();
+};
+
+// ─── PAGE: BOM / INTERNAL BOQ ─────────────────────────────────────────────────
+Pages.bom=function(c,params){
+  const user=Auth.getCurrentUser();
+  const canEdit=user.role==='project_manager'||user.role==='bom_officer';
+  const showCost=user.role==='project_manager'||user.role==='bom_officer'||user.role==='procurement_officer';
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+
+  const CATS=[
+    {v:'management',l:'Management',subs:['Site Expenses','Back Office Expenses','Utilities','Transportation']},
+    {v:'raw_materials',l:'Raw Materials',subs:['Frame Material','Panel Materials','Hardwares','Connections','Other Materials']},
+    {v:'labor',l:'Labor',subs:['Sub Labor Expenses','Daily Labor Expenses']},
+  ];
+
+  function render(){
+    const items=Store.findWhere('bomItems',x=>x.projectId===projectId);
+    c.innerHTML=`<div class="card"><h2>BOM / Internal BOQ</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+      ${canEdit?`<button class="btn btn-primary" style="margin-top:18px" id="add-bom-btn">+ Add Item</button>`:''}
+    </div>
+    ${CATS.map(cat=>{
+      const catItems=items.filter(x=>x.category===cat.v);
+      const catTotal=catItems.reduce((s,i)=>s+i.totalCost,0);
+      return`<div class="section-title">${cat.l}${showCost?` — Total: ${fmtUSD(catTotal)}`:''}</div>
+      ${catItems.length===0?`<p class="empty">No items.</p>`:`
+      <div style="overflow-x:auto"><table>
+        <thead><tr>
+          <th>Item Code</th><th>Description</th><th>Sub-Category</th>
+          <th>Unit</th><th>Qty</th>
+          ${showCost?'<th>Unit Cost</th><th>Total Cost</th>':''}
+          ${canEdit?'<th>Actions</th>':''}
+        </tr></thead>
+        <tbody>${catItems.map(i=>`<tr>
+          <td>${i.itemCode}</td><td>${i.description}</td>
+          <td><span class="tag">${i.subCategory}</span></td>
+          <td>${i.unit}</td><td>${i.quantity}</td>
+          ${showCost?`<td>${fmtUSD(i.unitCost)}</td><td><strong>${fmtUSD(i.totalCost)}</strong></td>`:''}
+          ${canEdit?`<td>
+            <button class="btn btn-warning btn-sm" onclick="editBOMItem('${i.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteBOMItem('${i.id}')">Del</button>
+          </td>`:''}
+        </tr>`).join('')}</tbody>
+      </table></div>`}`;
+    }).join('')}
+    </div>`;
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;render();});
+    document.getElementById('add-bom-btn')?.addEventListener('click',()=>bomModal(null));
+  }
+
+  function bomModal(id){
+    const it=id?Store.findById('bomItems',id):{};
+    const html=`<h3>${id?'Edit':'Add'} BOM Item</h3>
+    <form id="bom-form">
+      <div class="form-grid">
+        <div class="form-group"><label>Category*</label>
+          <select name="category" id="cat-sel">
+            ${CATS.map(c=>`<option value="${c.v}" ${it.category===c.v?'selected':''}>${c.l}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Sub-Category*</label>
+          <select name="subCategory" id="sub-sel">
+            ${CATS.find(c=>c.v===(it.category||'management'))?.subs.map(s=>`<option value="${s}" ${it.subCategory===s?'selected':''}>${s}</option>`).join('')||''}
+          </select></div>
+        <div class="form-group"><label>Item Code*</label><input name="itemCode" value="${it.itemCode||''}" required/></div>
+        <div class="form-group"><label>Description*</label><input name="description" value="${it.description||''}" required/></div>
+        <div class="form-group"><label>Unit*</label><input name="unit" value="${it.unit||''}" required/></div>
+        <div class="form-group"><label>Quantity*</label><input type="number" name="quantity" value="${it.quantity||''}" step="0.01" min="0" required/></div>
+        <div class="form-group"><label>Unit Cost (USD)*</label><input type="number" name="unitCost" value="${it.unitCost||''}" step="0.01" min="0" required/></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${id?'Save':'Add'}</button>
+      </div>
+    </form>`;
+    const ov=openModal(html,async(f)=>{
+      const qty=+f.quantity.value,uc=+f.unitCost.value;
+      const data={projectId,category:f.category.value,subCategory:f.subCategory.value,
+        itemCode:f.itemCode.value.trim(),description:f.description.value.trim(),
+        unit:f.unit.value.trim(),quantity:qty,unitCost:uc,totalCost:qty*uc,
+        createdBy:Auth.getCurrentUser().id};
+      if(id)Store.update('bomItems',id,data);
+      else Store.insert('bomItems',{id:uuid(),...data});
+      render();return true;
+    });
+    // Dynamic sub-category update
+    ov.querySelector('#cat-sel')?.addEventListener('change',e=>{
+      const cat=CATS.find(c=>c.v===e.target.value);
+      ov.querySelector('#sub-sel').innerHTML=cat?.subs.map(s=>`<option value="${s}">${s}</option>`).join('')||'';
+    });
+  }
+
+  window.editBOMItem=id=>bomModal(id);
+  window.deleteBOMItem=id=>{if(confirm('Delete this BOM item?')){Store.remove('bomItems',id);render();}};
+  render();
+};
+</script>
+
+<script>
+// ─── PAGE: PRODUCTION REQUEST ─────────────────────────────────────────────────
+Pages['production-request']=function(c,params){
+  const user=Auth.getCurrentUser();
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+  let draftItems=[];
+
+  function render(){
+    const requests=Store.findWhere('productionRequests',x=>x.projectId===projectId);
+    const contractItems=Store.findWhere('contractItems',x=>x.projectId===projectId);
+    c.innerHTML=`<div class="card"><h2>Production Request</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="section-title">New Request</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px">
+      <div class="form-group"><label>Item Code</label>
+        <select id="req-item-sel">
+          <option value="">-- Select Item --</option>
+          ${contractItems.map(i=>`<option value="${i.id}">${i.itemCode} — ${i.description}</option>`).join('')}
+        </select></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="req-qty" min="1" value="1" style="width:100px"/></div>
+      <button class="btn btn-success" id="add-draft-btn">Add to Request</button>
+    </div>
+    <div id="draft-table"></div>
+    <div id="req-err" class="inline-err"></div>
+    <div class="btn-row"><button class="btn btn-primary" id="submit-req-btn">Submit Request</button></div>
+
+    <div class="section-title" style="margin-top:24px">Request History</div>
+    ${requests.length===0?`<p class="empty">No requests yet.</p>`:`
+    <table><thead><tr><th>Date</th><th>Requested By</th><th>Items</th><th>Total Qty</th><th>Detail</th></tr></thead>
+    <tbody>${requests.map(r=>`<tr>
+      <td>${r.requestDate}</td>
+      <td>${Store.findById('users',r.requestedBy)?.displayName||r.requestedBy}</td>
+      <td>${r.items.length}</td>
+      <td>${r.items.reduce((s,i)=>s+i.quantityRequested,0)}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="viewProdReqDetail('${r.id}')">View</button></td>
+    </tr>`).join('')}</tbody></table>`}
+    </div>`;
+
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;draftItems=[];render();});
+    renderDraft();
+
+    document.getElementById('add-draft-btn')?.addEventListener('click',()=>{
+      const sel=document.getElementById('req-item-sel');
+      const qty=+document.getElementById('req-qty').value;
+      const itemId=sel.value;
+      if(!itemId){showToast('Select an item.');return;}
+      if(qty<1){showToast('Quantity must be at least 1.');return;}
+      const ci=Store.findById('contractItems',itemId);
+      const existing=draftItems.find(x=>x.itemCode===ci.itemCode);
+      if(existing)existing.quantityRequested+=qty;
+      else draftItems.push({itemCode:ci.itemCode,description:ci.description,quantityRequested:qty,status:'Pending'});
+      renderDraft();
+    });
+
+    document.getElementById('submit-req-btn')?.addEventListener('click',()=>{
+      const errEl=document.getElementById('req-err');
+      if(draftItems.length===0){errEl.textContent='Add at least one item.';return;}
+      errEl.textContent='';
+      Store.insert('productionRequests',{id:uuid(),projectId,requestDate:today(),requestedBy:user.id,items:[...draftItems]});
+      draftItems=[];showToast('Production request submitted.');render();
+    });
+  }
+
+  function renderDraft(){
+    const el=document.getElementById('draft-table');if(!el)return;
+    if(draftItems.length===0){el.innerHTML='<p class="empty">No items added yet.</p>';return;}
+    el.innerHTML=`<table><thead><tr><th>Item Code</th><th>Description</th><th>Qty</th><th></th></tr></thead>
+    <tbody>${draftItems.map((it,i)=>`<tr>
+      <td>${it.itemCode}</td><td>${it.description}</td><td>${it.quantityRequested}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeDraftItem(${i})">Remove</button></td>
+    </tr>`).join('')}</tbody></table>`;
+  }
+
+  window.removeDraftItem=i=>{draftItems.splice(i,1);renderDraft();};
+
+  window.viewProdReqDetail=id=>{
+    const r=Store.findById('productionRequests',id);if(!r)return;
+    const html=`<h3>Production Request — ${r.requestDate}</h3>
+    <table><thead><tr><th>Item Code</th><th>Description</th><th>Qty Requested</th><th>Status</th></tr></thead>
+    <tbody>${r.items.map(i=>`<tr><td>${i.itemCode}</td><td>${i.description}</td><td>${i.quantityRequested}</td>
+      <td><span class="badge badge-${i.status.toLowerCase().replace(/ /g,'-')}">${i.status}</span></td></tr>`).join('')}
+    </tbody></table>
+    <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`;
+    openModal(html);
+  };
+
+  render();
+};
+
+// ─── PAGE: PRODUCTION ─────────────────────────────────────────────────────────
+Pages.production=function(c,params){
+  const user=Auth.getCurrentUser();
+  const canUpdateStatus=user.role==='stock_production'||user.role==='project_manager';
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+
+  const STATUSES=['Pending','Producing','Completed Product','Delivered'];
+
+  function render(){
+    const requests=Store.findWhere('productionRequests',x=>x.projectId===projectId);
+    c.innerHTML=`<div class="card"><h2>Production</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    ${requests.length===0?`<p class="empty">No production requests.</p>`:`
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Date</th><th>Requested By</th><th>Item Code</th><th>Description</th><th>Qty</th><th>Status</th><th>Detail</th></tr></thead>
+      <tbody>${requests.flatMap(r=>r.items.map((it,idx)=>`<tr>
+        ${idx===0?`<td rowspan="${r.items.length}">${r.requestDate}</td><td rowspan="${r.items.length}">${Store.findById('users',r.requestedBy)?.displayName||r.requestedBy}</td>`:''}
+        <td>${it.itemCode}</td><td>${it.description}</td><td>${it.quantityRequested}</td>
+        <td>${canUpdateStatus
+          ?`<select class="status-select" onchange="updateProdStatus('${r.id}',${idx},this.value)">
+              ${STATUSES.map(s=>`<option value="${s}" ${it.status===s?'selected':''}>${s}</option>`).join('')}
+            </select>`
+          :`<span class="badge badge-${it.status.toLowerCase().replace(/ /g,'-')}">${it.status}</span>`}
+        </td>
+        ${idx===0?`<td rowspan="${r.items.length}"><button class="btn btn-sm btn-primary" onclick="viewProdDetail('${r.id}')">View</button></td>`:''}
+      </tr>`)).join('')}
+      </tbody>
+    </table></div>`}
+    </div>`;
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;render();});
+  }
+
+  window.updateProdStatus=(reqId,itemIdx,status)=>{
+    const req=Store.findById('productionRequests',reqId);if(!req)return;
+    req.items[itemIdx].status=status;
+    Store.update('productionRequests',reqId,{items:req.items});
+    showToast('Status updated.');
+  };
+
+  window.viewProdDetail=id=>{
+    const r=Store.findById('productionRequests',id);if(!r)return;
+    const html=`<h3>Production Detail — ${r.requestDate}</h3>
+    <table><thead><tr><th>Item Code</th><th>Description</th><th>Qty</th><th>Status</th></tr></thead>
+    <tbody>${r.items.map(i=>`<tr><td>${i.itemCode}</td><td>${i.description}</td><td>${i.quantityRequested}</td>
+      <td><span class="badge">${i.status}</span></td></tr>`).join('')}
+    </tbody></table>
+    <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`;
+    openModal(html);
+  };
+
+  render();
+};
+</script>
+
+<script>
+// ─── PAGE: PROGRESS ───────────────────────────────────────────────────────────
+Pages.progress=function(c,params){
+  const user=Auth.getCurrentUser();
+  const canInstall=user.role==='site_engineer'||user.role==='project_manager';
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+
+  function render(){
+    const items=Store.findWhere('contractItems',x=>x.projectId===projectId);
+    const sp=Store.findWhere('siteProgress',x=>x.projectId===projectId);
+    const prodReqs=Store.findWhere('productionRequests',x=>x.projectId===projectId);
+
+    // Aggregate installed per itemCode
+    const installed={};
+    sp.forEach(s=>{installed[s.itemCode]=(installed[s.itemCode]||0)+s.qtyInstalled;});
+
+    // Aggregate delivered per itemCode
+    const delivered={};
+    prodReqs.forEach(r=>r.items.forEach(it=>{
+      if(it.status==='Delivered')delivered[it.itemCode]=(delivered[it.itemCode]||0)+it.quantityRequested;
+    }));
+
+    c.innerHTML=`<div class="card"><h2>Site Progress</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+      ${canInstall?`<button class="btn btn-success" style="margin-top:18px" id="log-install-btn">+ Log Installed</button>`:''}
+    </div>
+    ${items.length===0?`<p class="empty">No contract items.</p>`:`
+    <div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>Item Code</th><th>Description</th><th>Contract Qty</th>
+        <th>Delivered to Site</th><th>Installed</th><th>Remaining</th><th>Progress</th>
+      </tr></thead>
+      <tbody>${items.map(i=>{
+        const del=delivered[i.itemCode]||0;
+        const inst=installed[i.itemCode]||0;
+        const rem=Math.max(0,i.quantity-inst);
+        const pct=i.quantity>0?Math.min(100,(inst/i.quantity)*100):0;
+        return`<tr>
+          <td><strong>${i.itemCode}</strong></td><td>${i.description}</td>
+          <td>${i.quantity}</td><td>${del}</td><td>${inst}</td>
+          <td>${rem}</td>
+          <td>
+            <div style="min-width:80px">
+              <div style="font-size:.78rem">${fmt2(pct)}%</div>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`}
+    </div>
+    <div class="card"><h2>Installation Log</h2>
+    ${sp.length===0?`<p class="empty">No installation records.</p>`:`
+    <table><thead><tr><th>Date</th><th>Item Code</th><th>Qty Installed</th><th>Recorded By</th></tr></thead>
+    <tbody>${[...sp].reverse().map(s=>`<tr>
+      <td>${s.date}</td><td>${s.itemCode}</td><td>${s.qtyInstalled}</td>
+      <td>${Store.findById('users',s.recordedBy)?.displayName||s.recordedBy}</td>
+    </tr>`).join('')}</tbody></table>`}
+    </div>`;
+
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;render();});
+    document.getElementById('log-install-btn')?.addEventListener('click',()=>logInstallModal());
+  }
+
+  function logInstallModal(){
+    const items=Store.findWhere('contractItems',x=>x.projectId===projectId);
+    const html=`<h3>Log Installed Quantity</h3>
+    <form id="install-form">
+      <div class="form-grid">
+        <div class="form-group"><label>Item Code*</label>
+          <select name="itemCode" required>
+            <option value="">-- Select --</option>
+            ${items.map(i=>`<option value="${i.itemCode}">${i.itemCode} — ${i.description}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Date*</label><input type="date" name="date" value="${today()}" required/></div>
+        <div class="form-group"><label>Qty Installed*</label><input type="number" name="qty" min="1" required/></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button type="submit" class="btn btn-success">Log</button>
+      </div>
+    </form>`;
+    openModal(html,async(f)=>{
+      Store.insert('siteProgress',{id:uuid(),projectId,itemCode:f.itemCode.value,date:f.date.value,qtyInstalled:+f.qty.value,recordedBy:user.id});
+      showToast('Installation logged.');render();return true;
+    });
+  }
+
+  render();
+};
+
+// ─── PAGE: PROGRESS CLAIM ─────────────────────────────────────────────────────
+Pages['progress-claim']=function(c,params){
+  const user=Auth.getCurrentUser();
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+  let draftLines=[];
+
+  function render(){
+    const project=Store.findById('projects',projectId);
+    const claims=Store.findWhere('progressClaims',x=>x.projectId===projectId);
+    c.innerHTML=`<div class="card"><h2>Progress Claim</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+      ${project?`<div style="margin-top:18px;font-size:.82rem;color:#666">Retention: <strong>${project.retentionType==='progress'?'Progress':'Final'} ${project.retentionPercent}%</strong></div>`:''}
+    </div>
+
+    <div class="section-title">New Claim</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px">
+      <div class="form-group"><label>Item Code</label><input id="claim-item-code" placeholder="e.g. W-001" style="width:130px"/></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="claim-qty" min="1" value="1" style="width:90px"/></div>
+      <div class="form-group"><label>% to Claim</label><input type="number" id="claim-pct" min="0" max="100" value="100" style="width:90px"/></div>
+      <button class="btn btn-success" id="add-claim-line-btn">Add Line</button>
+    </div>
+    <div id="claim-err" class="inline-err"></div>
+    <div id="draft-claim-table"></div>
+    <div id="claim-totals"></div>
+    <div class="btn-row"><button class="btn btn-primary" id="submit-claim-btn">Submit Claim</button></div>
+
+    <div class="section-title" style="margin-top:24px">Claim History</div>
+    ${claims.length===0?`<p class="empty">No claims yet.</p>`:`
+    <table><thead><tr><th>Date</th><th>Total Progress Amt</th><th>Retention</th><th>Amount to Request</th><th>Detail</th></tr></thead>
+    <tbody>${[...claims].reverse().map(cl=>`<tr>
+      <td>${cl.claimDate}</td>
+      <td>${fmtUSD(cl.totalProgressAmount)}</td>
+      <td>${fmtUSD(cl.retentionAmount)}</td>
+      <td><strong>${fmtUSD(cl.amountToRequest)}</strong></td>
+      <td><button class="btn btn-sm btn-primary" onclick="viewClaimDetail('${cl.id}')">View</button></td>
+    </tr>`).join('')}</tbody></table>`}
+    </div>`;
+
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;draftLines=[];render();});
+    renderDraftClaim();
+
+    document.getElementById('add-claim-line-btn')?.addEventListener('click',()=>{
+      const errEl=document.getElementById('claim-err');
+      errEl.textContent='';
+      const itemCode=document.getElementById('claim-item-code').value.trim().toUpperCase();
+      const qty=+document.getElementById('claim-qty').value;
+      const pct=+document.getElementById('claim-pct').value;
+      const proj=Store.findById('projects',projectId);
+      if(!proj){errEl.textContent='Select a project.';return;}
+
+      const ci=Store.findWhere('contractItems',x=>x.projectId===projectId&&x.itemCode===itemCode)[0];
+      if(!ci){errEl.textContent='Item code not found in Contract BOQ.';return;}
+
+      // Validate qty — block only if 100% already claimed for this item
+      const prevClaims=Store.findWhere('progressClaims',x=>x.projectId===projectId);
+      // Sum of (qty × pct) already claimed, as a fraction of contract qty × 100%
+      const prevClaimedPct=prevClaims.reduce((s,cl)=>
+        s+cl.lines.filter(l=>l.itemCode===itemCode).reduce((ss,l)=>ss+(l.quantity/ci.quantity)*l.percentRequest,0),0);
+      const draftClaimedPct=draftLines.filter(l=>l.itemCode===itemCode).reduce((s,l)=>
+        s+(l.quantity/ci.quantity)*l.percentRequest,0);
+      const newPct=(qty/ci.quantity)*pct;
+      const maxPctAllowed=proj.retentionType==='final'?100-proj.retentionPercent:100;
+      if(prevClaimedPct+draftClaimedPct>=maxPctAllowed){
+        errEl.textContent=`This item has already been 100% claimed.`;return;
+      }
+      if(qty>ci.quantity){errEl.textContent=`Qty cannot exceed contract qty (${ci.quantity}).`;return;}
+
+      // Validate pct
+      if(pct>maxPctAllowed){errEl.textContent=`Max claimable percent is ${maxPctAllowed}%.`;return;}
+      if(pct<=0){errEl.textContent='Percent must be > 0.';return;}
+      if(prevClaimedPct+draftClaimedPct+newPct>maxPctAllowed){
+        const remaining=maxPctAllowed-prevClaimedPct-draftClaimedPct;
+        errEl.textContent=`This would exceed claimable limit. Max remaining: ${fmt2(remaining)}% of contract value.`;return;
+      }
+
+      const unitAmt=calcItemTotal(ci)/ci.quantity;
+      const amtReq=unitAmt*qty*(pct/100);
+      draftLines.push({itemCode,description:ci.description,unitAmountPerQty:unitAmt,quantity:qty,percentRequest:pct,amountRequest:amtReq});
+      renderDraftClaim();
+    });
+
+    document.getElementById('submit-claim-btn')?.addEventListener('click',()=>{
+      const errEl=document.getElementById('claim-err');
+      if(draftLines.length===0){errEl.textContent='Add at least one line.';return;}
+      const proj=Store.findById('projects',projectId);
+      const total=draftLines.reduce((s,l)=>s+l.amountRequest,0);
+      const ret=proj.retentionType==='progress'?(proj.retentionPercent/100)*total:0;
+      const toReq=total-ret;
+      Store.insert('progressClaims',{id:uuid(),projectId,claimDate:today(),createdBy:user.id,
+        lines:[...draftLines],totalProgressAmount:total,retentionAmount:ret,amountToRequest:toReq});
+      draftLines=[];showToast('Progress claim submitted.');render();
+    });
+  }
+
+  function renderDraftClaim(){
+    const dt=document.getElementById('draft-claim-table');
+    const tt=document.getElementById('claim-totals');
+    if(!dt)return;
+    if(draftLines.length===0){dt.innerHTML='<p class="empty">No lines added.</p>';if(tt)tt.innerHTML='';return;}
+    const total=draftLines.reduce((s,l)=>s+l.amountRequest,0);
+    const proj=Store.findById('projects',projectId);
+    const ret=proj&&proj.retentionType==='progress'?(proj.retentionPercent/100)*total:0;
+    const toReq=total-ret;
+    dt.innerHTML=`<table><thead><tr>
+      <th>Item Code</th><th>Description</th><th>Unit Amt/Qty</th><th>Qty</th><th>%</th><th>Amount</th><th></th>
+    </tr></thead>
+    <tbody>${draftLines.map((l,i)=>`<tr>
+      <td>${l.itemCode}</td><td>${l.description}</td>
+      <td>${fmtUSD(l.unitAmountPerQty)}</td><td>${l.quantity}</td>
+      <td>${l.percentRequest}%</td><td>${fmtUSD(l.amountRequest)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeClaimLine(${i})">✕</button></td>
+    </tr>`).join('')}</tbody></table>`;
+    if(tt)tt.innerHTML=`<div style="margin-top:12px;padding:12px;background:#f7f9fb;border-radius:6px;text-align:right">
+      <div>Total Progress Amount: <strong>${fmtUSD(total)}</strong></div>
+      <div>Retention (${proj?.retentionType==='progress'?proj.retentionPercent+'%':'Final — 0'}): <strong style="color:#c0392b">${fmtUSD(ret)}</strong></div>
+      <div style="font-size:1.1rem;margin-top:6px">Amount to Request: <strong style="color:#27ae60">${fmtUSD(toReq)}</strong></div>
+    </div>`;
+  }
+
+  window.removeClaimLine=i=>{draftLines.splice(i,1);renderDraftClaim();};
+
+  window.viewClaimDetail=id=>{
+    const cl=Store.findById('progressClaims',id);if(!cl)return;
+    const html=`<h3>Claim Detail — ${cl.claimDate}</h3>
+    <table><thead><tr><th>Item Code</th><th>Description</th><th>Unit Amt/Qty</th><th>Qty</th><th>%</th><th>Amount</th></tr></thead>
+    <tbody>${cl.lines.map(l=>`<tr>
+      <td>${l.itemCode}</td><td>${l.description}</td>
+      <td>${fmtUSD(l.unitAmountPerQty)}</td><td>${l.quantity}</td>
+      <td>${l.percentRequest}%</td><td>${fmtUSD(l.amountRequest)}</td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr>
+      <td colspan="5" style="text-align:right">Total Progress Amount:</td><td><strong>${fmtUSD(cl.totalProgressAmount)}</strong></td>
+    </tr><tr>
+      <td colspan="5" style="text-align:right">Retention:</td><td><strong style="color:#c0392b">${fmtUSD(cl.retentionAmount)}</strong></td>
+    </tr><tr>
+      <td colspan="5" style="text-align:right">Amount to Request:</td><td><strong style="color:#27ae60">${fmtUSD(cl.amountToRequest)}</strong></td>
+    </tr></tfoot></table>
+    <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`;
+    openModal(html);
+  };
+
+  render();
+};
+</script>
+
+<script>
+// ─── PAGE: PURCHASING REQUEST ─────────────────────────────────────────────────
+Pages['purchasing-request']=function(c,params){
+  const user=Auth.getCurrentUser();
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+  let draftItems=[];
+
+  function render(){
+    const requests=Store.findWhere('purchaseRequests',x=>x.projectId===projectId);
+    const bomItems=Store.findWhere('bomItems',x=>x.projectId===projectId&&x.category==='raw_materials');
+    c.innerHTML=`<div class="card"><h2>Purchasing Request</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="section-title">New Purchase Request</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px">
+      <div class="form-group"><label>Material (from BOM)</label>
+        <select id="bom-item-sel">
+          <option value="">-- Select Material --</option>
+          ${bomItems.map(i=>`<option value="${i.id}">${i.itemCode} — ${i.description} (${i.unit})</option>`).join('')}
+        </select></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="pur-qty" min="1" value="1" style="width:100px"/></div>
+      <button class="btn btn-success" id="add-pur-btn">Add</button>
+    </div>
+    <div id="pur-draft-table"></div>
+    <div id="pur-err" class="inline-err"></div>
+    <div class="btn-row"><button class="btn btn-primary" id="submit-pur-btn">Submit Request</button></div>
+
+    <div class="section-title" style="margin-top:24px">Request History</div>
+    ${requests.length===0?`<p class="empty">No requests yet.</p>`:`
+    <table><thead><tr><th>Date</th><th>Requested By</th><th>Items</th><th>Detail</th></tr></thead>
+    <tbody>${[...requests].reverse().map(r=>`<tr>
+      <td>${r.requestDate}</td>
+      <td>${Store.findById('users',r.requestedBy)?.displayName||r.requestedBy}</td>
+      <td>${r.items.length}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="viewPurDetail('${r.id}')">View</button></td>
+    </tr>`).join('')}</tbody></table>`}
+    </div>`;
+
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;draftItems=[];render();});
+    renderPurDraft();
+
+    document.getElementById('add-pur-btn')?.addEventListener('click',()=>{
+      const sel=document.getElementById('bom-item-sel');
+      const qty=+document.getElementById('pur-qty').value;
+      const bomId=sel.value;
+      if(!bomId){showToast('Select a material.');return;}
+      if(qty<1){showToast('Quantity must be at least 1.');return;}
+      const bom=Store.findById('bomItems',bomId);
+      const existing=draftItems.find(x=>x.bomItemId===bomId);
+      if(existing)existing.quantityRequested+=qty;
+      else draftItems.push({bomItemId:bomId,description:bom.description,unit:bom.unit,quantityRequested:qty,status:'Request Accepted'});
+      renderPurDraft();
+    });
+
+    document.getElementById('submit-pur-btn')?.addEventListener('click',()=>{
+      const errEl=document.getElementById('pur-err');
+      if(draftItems.length===0){errEl.textContent='Add at least one item.';return;}
+      errEl.textContent='';
+      Store.insert('purchaseRequests',{id:uuid(),projectId,requestDate:today(),requestedBy:user.id,items:[...draftItems]});
+      draftItems=[];showToast('Purchase request submitted.');render();
+    });
+  }
+
+  function renderPurDraft(){
+    const el=document.getElementById('pur-draft-table');if(!el)return;
+    if(draftItems.length===0){el.innerHTML='<p class="empty">No items added.</p>';return;}
+    el.innerHTML=`<table><thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th></th></tr></thead>
+    <tbody>${draftItems.map((it,i)=>`<tr>
+      <td>${it.description}</td><td>${it.unit}</td><td>${it.quantityRequested}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removePurItem(${i})">Remove</button></td>
+    </tr>`).join('')}</tbody></table>`;
+  }
+
+  window.removePurItem=i=>{draftItems.splice(i,1);renderPurDraft();};
+
+  window.viewPurDetail=id=>{
+    const r=Store.findById('purchaseRequests',id);if(!r)return;
+    const html=`<h3>Purchase Request — ${r.requestDate}</h3>
+    <table><thead><tr><th>Description</th><th>Unit</th><th>Qty</th><th>Status</th></tr></thead>
+    <tbody>${r.items.map(i=>`<tr>
+      <td>${i.description}</td><td>${i.unit}</td><td>${i.quantityRequested}</td>
+      <td><span class="badge">${i.status}</span></td>
+    </tr>`).join('')}</tbody></table>
+    <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').remove()">Close</button></div>`;
+    openModal(html);
+  };
+
+  render();
+};
+
+// ─── PAGE: PROCUREMENT ────────────────────────────────────────────────────────
+Pages.procurement=function(c,params){
+  const user=Auth.getCurrentUser();
+  const canUpdate=user.role==='procurement_officer'||user.role==='project_manager';
+  const projects=Store.get('projects');
+  let projectId=params.projectId||projects[0]?.id||'';
+
+  const STATUSES=['Request Accepted','Request Denied','Delivered to Stock'];
+
+  function render(){
+    const requests=Store.findWhere('purchaseRequests',x=>x.projectId===projectId);
+    const bomItems=Store.findWhere('bomItems',x=>x.projectId===projectId);
+
+    // Summary: purchased vs remaining
+    const summary={};
+    bomItems.filter(b=>b.category==='raw_materials').forEach(b=>{
+      summary[b.id]={description:b.description,unit:b.unit,totalQty:b.quantity,purchased:0};
+    });
+    requests.forEach(r=>r.items.forEach(it=>{
+      if(it.status==='Delivered to Stock'&&summary[it.bomItemId]){
+        summary[it.bomItemId].purchased+=it.quantityRequested;
+      }
+    }));
+
+    c.innerHTML=`<div class="card"><h2>Procurement</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="form-group" style="min-width:200px"><label>Project</label>
+        <select id="proj-sel">${projects.map(p=>`<option value="${p.id}" ${p.id===projectId?'selected':''}>${p.name}</option>`).join('')}</select>
+      </div>
+    </div>
+
+    <div class="section-title">Purchase Requests</div>
+    ${requests.length===0?`<p class="empty">No purchase requests.</p>`:`
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Date</th><th>Requested By</th><th>Description</th><th>Unit</th><th>Qty</th><th>Status</th></tr></thead>
+      <tbody>${requests.flatMap(r=>r.items.map((it,idx)=>`<tr>
+        ${idx===0?`<td rowspan="${r.items.length}">${r.requestDate}</td>
+          <td rowspan="${r.items.length}">${Store.findById('users',r.requestedBy)?.displayName||r.requestedBy}</td>`:''}
+        <td>${it.description}</td><td>${it.unit}</td><td>${it.quantityRequested}</td>
+        <td>${canUpdate
+          ?`<select class="status-select" onchange="updatePurStatus('${r.id}',${idx},this.value)">
+              ${STATUSES.map(s=>`<option value="${s}" ${it.status===s?'selected':''}>${s}</option>`).join('')}
+            </select>`
+          :`<span class="badge">${it.status}</span>`}
+        </td>
+      </tr>`)).join('')}
+      </tbody>
+    </table></div>`}
+
+    <div class="section-title" style="margin-top:24px">Material Summary</div>
+    ${Object.keys(summary).length===0?`<p class="empty">No BOM materials defined.</p>`:`
+    <table><thead><tr><th>Description</th><th>Unit</th><th>BOM Qty</th><th>Purchased (Delivered)</th><th>Remaining</th></tr></thead>
+    <tbody>${Object.values(summary).map(s=>`<tr>
+      <td>${s.description}</td><td>${s.unit}</td><td>${s.totalQty}</td>
+      <td class="green">${s.purchased}</td>
+      <td class="${s.totalQty-s.purchased>0?'red':''}">${Math.max(0,s.totalQty-s.purchased)}</td>
+    </tr>`).join('')}</tbody></table>`}
+    </div>`;
+
+    document.getElementById('proj-sel')?.addEventListener('change',e=>{projectId=e.target.value;render();});
+  }
+
+  window.updatePurStatus=(reqId,itemIdx,status)=>{
+    const req=Store.findById('purchaseRequests',reqId);if(!req)return;
+    req.items[itemIdx].status=status;
+    Store.update('purchaseRequests',reqId,{items:req.items});
+    showToast('Status updated.');render();
+  };
+
+  render();
+};
+
+// ─── REGISTER PAGES & BOOT ────────────────────────────────────────────────────
+Router.register('login', Pages.login);
+Router.register('projects', Pages.projects);
+Router.register('users', Pages.users);
+Router.register('contract-boq', Pages['contract-boq']);
+Router.register('bom', Pages.bom);
+Router.register('production-request', Pages['production-request']);
+Router.register('production', Pages.production);
+Router.register('progress', Pages.progress);
+Router.register('progress-claim', Pages['progress-claim']);
+Router.register('purchasing-request', Pages['purchasing-request']);
+Router.register('procurement', Pages.procurement);
+
+(async()=>{
+  await seedAdmin();
+  const user=Auth.getCurrentUser();
+  if(!user||!location.hash||location.hash==='#login'){
+    Router.navigate('login');
+  } else {
+    Router.render();
+  }
+})();
+</script>
+</body>
+</html>
