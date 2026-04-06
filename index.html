@@ -165,10 +165,11 @@ const Auth={
     const user=users.find(u=>u.username===username&&u.passwordHash===hash);
     if(!user)return{success:false,error:'Invalid username or password'};
     sessionStorage.setItem('session',JSON.stringify({id:user.id,username:user.username,role:user.role,displayName:user.displayName}));
+    localStorage.setItem('session',JSON.stringify({id:user.id,username:user.username,role:user.role,displayName:user.displayName}));
     return{success:true,user};
   },
-  getCurrentUser(){try{return JSON.parse(sessionStorage.getItem('session'));}catch{return null;}},
-  logout(){sessionStorage.removeItem('session');location.hash='#login';Router.render();},
+  getCurrentUser(){try{return JSON.parse(localStorage.getItem('session')||sessionStorage.getItem('session'));}catch{return null;}},
+  logout(){localStorage.removeItem('session');sessionStorage.removeItem('session');location.hash='#login';Router.render();},
   hasPermission(role,page){
     const P={
       project_manager:new Set(['projects','contract-boq','progress-claim','bom','production-request','production','progress','purchasing-request','procurement','users']),
@@ -1292,11 +1293,11 @@ Router.register('procurement', Pages.procurement);
 (async()=>{
   await seedAdmin();
   const user=Auth.getCurrentUser();
-  if(!user||!location.hash||location.hash==='#login'){
-    Router.navigate('login');
-  } else {
-    Router.render();
+  // Remove hashchange listener temporarily during boot to avoid double render
+  if(!user||!location.hash||location.hash==='#login'||location.hash==='#'){
+    history.replaceState(null,'','#login');
   }
+  await Router.render();
 })();
 </script>
 </body>
